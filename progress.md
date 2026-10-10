@@ -1,8 +1,20 @@
 # 实施进度
 
-最后更新：2026-10-08（Asia/Shanghai）
+最后更新：2026-10-10（Asia/Shanghai）
 
 ## 当前阶段
+
+2026-10-10 Git交付：按用户要求整理本批本地提交；核查当前origin为公开仓库871099/NiumaTimer。私有仓库目标待用户明确，暂不推送到公开远程；既有v0.1.0发布不变。
+
+2026-10-10 记录入口与穿透修正：只读确认原history有10个日期而隔离目录0个，两根启动脚本统一读取原正式数据且优先r4；未改动历史文件。穿透改为展示区原生输入样式，按钮区恢复输入。Release16/16成功，QML静态检查未报错误；实际交互待验收。包dist/NiumaTimer-widget-r4-windows-x64。
+
+2026-10-10 挂件透明度：桌面陪伴新增0–80%透明度滑块，角色/文字/背景整体即时淡化，偏好保存至 Desktop/miniOpacity，默认保持原效果；不影响主窗口。实际透明显示与重启回读待验收。
+
+2026-10-10 声音修正：音频生成与设备操作移至独立线程，按FIFO提交6个缓冲，淡出后自然排空再关闭；设备错误完整清理，音量偏好合并写盘。Release增量6/6成功，实际听感待用户确认。包 dist/NiumaTimer-focus-audio-r2-windows-x64；根目录启动脚本优先使用修正版。
+
+2026-10-10：新增专注与声音首版：独立 FocusController/SoundController、FocusPage、活动清单/今日计划、番茄与等待/打断记录、复盘、Windows 合成声音和挂件入口。Release 构建成功，修正版启动日志确认 QML 主窗口已加载；Computer Use 未完成页面观察，用户按 Escape 停止界面自动操作。完整交互与试听待验收；Android 音频未接入。详见 docs/07-focus-and-sound.md。
+
+2026-10-10：按用户确认开始桌面陪伴首批升级；新增托盘/迷你挂件、隐私显示、提醒、开机启动选项、未结算日期例外和收入目标，Windows Release 已编译。首个预览主窗口和挂件已实际显示；完整交互待验收。范围及后续阶段见 `docs/06-desktop-companion.md`。GitHub 仓库已由用户改为 Public；线上发布仍为 v0.1.0，本批源码未提交推送。
 
 已完成 Windows Debug 和 Release 构建；已有共享导航、首页、任务、统计、工资/排班、成就、换装和关于页。2026-10-08 法定假期停班/补班和旧历史修正已完成，v0.1.0 Windows x64便携包已发布至 `https://github.com/871099/NiumaTimer/releases/tag/v0.1.0`。工程位于 `K:\dev\Game\worker-timer-v2`；旧原型 `K:\dev\Game\worker-timer` 保留，不作为本工程代码基础。
 
@@ -10,7 +22,10 @@
 
 ## 已完成
 
-- 源码已推送至私有GitHub仓库 `871099/NiumaTimer` 的main分支，发布标签v0.1.0对应源码提交 `3c6e5bd`；Release包含Windows x64下载包和SHA256SUMS.txt。
+- 2026-10-10 新增独立 DesktopController、MiniWidget、DesktopSettingsPage、DateExceptionsCard 和 IncomeGoalsCard；日期来源、例外班次、工资/经验与历史读取共用业务计算。
+- 新增启动日志、Windows 单实例唤回和根目录启动脚本；本批不覆盖线上 v0.1.0。
+
+- 源码已推送至GitHub仓库（发布时私有，用户后续改为公开） `871099/NiumaTimer` 的main分支，发布标签v0.1.0对应源码提交 `3c6e5bd`；Release包含Windows x64下载包和SHA256SUMS.txt。
 
 - 修正旧版国庆误结算迁移：历史仓库备份原文件、归档原班次并清零假期工作记录，保留任务和外观；展示/统计/写入入口统一拦截假期班次。实际本机6条已修正，非假期2条保留。
 
@@ -35,15 +50,26 @@
 
 ## 当前问题与环境限制
 
+- 首批新增交互未全部验收；首次运行托盘图标 URI 问题已修正并编译，修正版托盘恢复尚待确认。日期例外只支持未结算日期，已结算历史与旧经验账本迁移仍待实施。
+- 当前只有姿态切换及轻微呼吸动效，完整逐帧动作未制作；目标编辑、备份恢复、CSV、年历联网更新与 Android APK 未完成。
+
 - 旧版经验总数混合手填基数与自动奖励，没有逐日来源；旧历史修正不据工资记录反推扣减累计天数。后续自动经验已按假期规则停算。
 
 - 官方年历当前收录至2026年；2027年只有元旦法定日期提示，连休和调休待正式公布后更新。年历随应用版本发布，没有自动联网年历更新。
 - Windows 编译器问题已解决：PATH 原先优先命中旧版 `J:/AutoMod/bin/cl.exe`；改用 `L:/Program Files/Microsoft Visual Studio/2022/Community/VC/Auxiliary/Build/vcvars64.bat` 后，CMake 正确识别 MSVC 19.44。
 - Android Qt Kit 与常见位置的 Android SDK 尚未安装；APK 构建和手机交互验收未执行。
-- 当前打开的是打包目录中的Release版本；本机启动验证通过，其他电脑部署仍待验收。
-- 已初始化Git main分支，私有远程仓库为 `https://github.com/871099/NiumaTimer`；编译目录、发布包和本机日志已忽略。
+- 当前运行的是首个本地桌面开发预览 PID35712；修正版已打包在 dist/NiumaTimer-desktop-preview-r2-windows-x64，需退出已有预览后启动。首版窗口/挂件已显示，修正版完整交互与其他电脑部署仍待验收。
+- 已初始化Git main分支，当前公开远程仓库为 `https://github.com/871099/NiumaTimer`；编译目录、发布包和本机日志已忽略。
 
 ## 验证记录
+
+- 2026-10-10 挂件透明度：Windows Release构建返回0，QML静态检查未报错误，仍有既有未限定访问警告；无新增/运行测试。已打包dist/NiumaTimer-widget-r3-windows-x64并更新启动脚本；未操作用户运行中的窗口，实际视觉与重启回读待验收。
+
+- 2026-10-10 声音修正：Release6/6构建成功，git diff --check 无空白错误；未新增/运行测试、未操作当前运行窗口。声音听感及设备错误重试行为待验收。日志 build-release/sound-fix-build.log；包哈希见 build-release/sound-fix-evidence.json。
+
+- 2026-10-10 专注首版：Windows Qt6.8.3/MSVC2022 Release 增量7/7链接成功；首次启动暴露 Flow 只读 implicitHeight 赋值错误，修正为 Layout.preferredHeight 后隔离预览启动日志出现 Startup complete。页面交互、完整轮次、恢复及实际听感待人工验收；未新增或运行测试。构建日志 build-release/focus-build-final.log；包 dist/NiumaTimer-focus-preview-windows-x64。
+
+- 2026-10-10：Windows Qt6.8.3/MSVC2022 x64 Release 已编译；首个预览 PID35712 响应正常，Computer Use 观察宽/窄屏首页与挂件，倒计时持续推进。工具随后连续检测到用户输入，停止自动点击；日期保存、通知、穿透、托盘恢复等待验收。本轮未新增或运行测试用例。
 
 - 2026-10-08：远程main与v0.1.0标签已核对；ZIP为58,623,064字节，解压后EXE与启动验证的包内EXE哈希一致，未混入用户history.json、日志、编译缓存或调试符号。GitHub Release非草稿，两份附件均已上传，服务端SHA256均与本机一致；证据为 `build-release/release-archive-verification.json` 与 `release-publication-verification.json`。
 
@@ -67,6 +93,8 @@
 - 2026-09-29：大小周实际交互待用户验收；Android APK 和手机验收待 Android 工具链。
 
 ## 下一步
+
+0. 先验收桌面陪伴首批功能（详见 docs/06-desktop-companion.md），再推进经验账本、数据导出、完整角色动画与 Android。
 
 1. 人工验收假期详情打开/关闭、调休列表和窄屏换行；国务院新年度通知公布后更新年历资源。
 2. 完成已有页面的保存回读、任务维护、历史统计、成就/外观，以及置顶、大小周和网络校时交互验收；按产品图继续检查视觉效果。

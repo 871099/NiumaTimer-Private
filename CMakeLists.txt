@@ -8,9 +8,18 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 find_package(Qt6 6.8 REQUIRED COMPONENTS Core Gui Network Qml Quick QuickControls2)
 qt_standard_project_setup(REQUIRES 6.8)
+if(WIN32)
+    find_package(Qt6 REQUIRED COMPONENTS Widgets)
+endif()
 
 qt_add_executable(NiumaTimer
     src/main.cpp
+    src/app/FocusController.cpp
+    src/app/FocusController.h
+    src/app/SoundController.cpp
+    src/app/SoundController.h
+    src/app/DesktopController.cpp
+    src/app/DesktopController.h
     src/app/NetworkClock.cpp
     src/app/NetworkClock.h
     src/app/WorkTimer.cpp
@@ -38,7 +47,12 @@ qt_add_qml_module(NiumaTimer
     VERSION 1.0
     QML_FILES
         src/ui/Theme.qml
+        src/ui/FocusPage.qml
         src/ui/Main.qml
+        src/ui/MiniWidget.qml
+        src/ui/DesktopSettingsPage.qml
+        src/ui/DateExceptionsCard.qml
+        src/ui/IncomeGoalsCard.qml
         src/ui/AppShell.qml
         src/ui/HomePage.qml
         src/ui/HolidayCountdownCard.qml
@@ -69,6 +83,9 @@ target_link_libraries(NiumaTimer PRIVATE
     Qt6::Quick
     Qt6::QuickControls2
 )
+if(WIN32)
+    target_link_libraries(NiumaTimer PRIVATE Qt6::Widgets winmm)
+endif()
 
 set_target_properties(NiumaTimer PROPERTIES
     WIN32_EXECUTABLE TRUE

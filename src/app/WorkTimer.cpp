@@ -50,6 +50,17 @@ void WorkTimer::setHistoryStore(WorkHistoryStore *store) {
 }
 
 void WorkTimer::loadSettings() {
+    dateExceptions_ = settings_.value(QStringLiteral("schedule/dateExceptions")).toMap();
+    // 格式异常的日期例外回到已有排班规则。
+    for (auto it = dateExceptions_.begin(); it != dateExceptions_.end();) {
+        const auto item = it.value().toMap();
+        const auto kind = item.value("kind").toString();
+        if (!QDate::fromString(it.key(), Qt::ISODate).isValid() ||
+            (kind != "work" && kind != "rest" && kind != "leave" && kind != "custom") ||
+            (kind == "custom" && (!validClock(item.value("start").toString()) || !validClock(item.value("end").toString()))))
+            it = dateExceptions_.erase(it);
+        else ++it;
+    }
     windowPinned_ = settings_.value(QStringLiteral("ui/windowPinned"), false).toBool();
     salaryMode_ = settings_.value(QStringLiteral("pay/mode"), salaryMode_).toString();
     if (salaryMode_ != QLatin1String("hourly") &&
@@ -118,6 +129,7 @@ void WorkTimer::loadSettings() {
 }
 
 bool WorkTimer::saveSettings() {
+    settings_.setValue(QStringLiteral("schedule/dateExceptions"), dateExceptions_);
     settings_.setValue(QStringLiteral("ui/windowPinned"), windowPinned_);
     settings_.setValue(QStringLiteral("pay/mode"), salaryMode_);
     settings_.setValue(QStringLiteral("pay/amount"), salaryAmount_);
@@ -211,7 +223,8 @@ void WorkTimer::settleHistory(const QDateTime &now) {
             {QStringLiteral("shiftEnd"), shift.end.toString(Qt::ISODate)},
             {QStringLiteral("breakStart"), shift.breakStart.toString(Qt::ISODate)},
             {QStringLiteral("breakEnd"), shift.breakEnd.toString(Qt::ISODate)},
-            {QStringLiteral("salaryMode"), salaryMode_}};
+            {QStringLiteral("salaryMode"), salaryMode_},
+            {QStringLiteral("manualWork"), dateExceptions_.contains(date.toString(Qt::ISODate))}};
         if (!historyStore_->recordCompletedDay(record)) break;
     }
 }
@@ -469,6 +482,11 @@ bool WorkTimer::applySettings() {
 }
 
 bool WorkTimer::isScheduledWorkday(const QDate &date) const {
+    const auto exception = dateExceptions_.value(date.toString(Qt::ISODate)).toMap();
+    if (!exception.isEmpty()) {
+        const QString kind = exception.value("kind").toString();
+        return kind == "work" || kind == "custom";
+    }
     const int holidayOverride = holidayCalendar_.scheduleOverride(date);
     if (holidayOverride >= 0) return holidayOverride == 1;
     const int index = date.dayOfWeek() - 1; // QDate：周一为 1，掩码从 0 开始
@@ -491,13 +509,18 @@ WorkTimer::ShiftWindow WorkTimer::shiftForDate(const QDate &date) const {
     ShiftWindow shift;
     shift.date = date;
     shift.isWorkday = isScheduledWorkday(date);
-    shift.start = atLocalTime(date, startTime_);
-    shift.end = atLocalTime(date, endTime_);
+    const auto exception = dateExceptions_.value(date.toString(Qt::ISODate)).toMap();
+    const bool custom = exception.value("kind").toString() == "custom";
+    shift.start = atLocalTime(date, custom ? exception.value("start").toString() : startTime_);
+    shift.end = atLocalTime(date, custom ? exception.value("end").toString() : endTime_);
     if (shift.end <= shift.start) shift.end = shift.end.addDays(1);
 
     // 跨午夜班次遇到次日法定放假时，在放假日零点结束前一日班次。
     for (QDate day = date.addDays(1); day <= shift.end.date(); day = day.addDays(1)) {
-        if (holidayCalendar_.scheduleOverride(day) != 0) continue;
+        const auto nextException = dateExceptions_.value(day.toString(Qt::ISODate)).toMap();
+        const auto nextKind = nextException.value("kind").toString();
+        const bool explicitRest = nextKind == "rest" || nextKind == "leave";
+        if (!explicitRest && (!nextException.isEmpty() || holidayCalendar_.scheduleOverride(day) != 0)) continue;
         const QDateTime holidayStart = atLocalTime(day, QStringLiteral("00:00"));
         if (holidayStart > shift.start && holidayStart < shift.end) shift.end = holidayStart;
         break;
@@ -584,6 +607,71 @@ QString WorkTimer::formatMoney(qint64 cents) {
         static_cast<double>(cents) / 100.0, 'f', 2);
 }
 
+// 明确展示当天排班来源，个人日期例外优先于官方年历与周规则。
+QString WorkTimer::scheduleReason() const {
+    const auto today = networkClock_.currentDateTime().date();
+    const auto exception = dateExceptions_.value(today.toString(Qt::ISODate)).toMap();
+    const auto kind = exception.value("kind").toString();
+    if (kind == "leave") return QStringLiteral("个人日期安排：请假，不计工时、工资与经验");
+    if (kind == "rest") return QStringLiteral("个人日期安排：休息，不计工时、工资与经验");
+    if (kind == "work" || kind == "custom") return QStringLiteral("个人日期安排：上班 %1 — %2").arg(
+        kind == "custom" ? exception.value("start").toString() : startTime_,
+        kind == "custom" ? exception.value("end").toString() : endTime_);
+    const int official = holidayCalendar_.scheduleOverride(today);
+    if (official == 0) return QStringLiteral("官方放假安排：%1休息").arg(holidayCalendar_.holidayNameOn(today));
+    if (official == 1) return QStringLiteral("官方调休安排：补班");
+    return QStringLiteral("%1：今天%2").arg(scheduleMode_ == "alternating" ? QStringLiteral("大小周规则") : QStringLiteral("固定周规则"),
+        isScheduledWorkday(today) ? QStringLiteral("上班") : QStringLiteral("休息"));
+}
+// 六周预览共享真实班次算法，不在控件内维护第二套工作日规则。
+QVariantList WorkTimer::calendarDays() const {
+    QVariantList days;
+    const auto today = networkClock_.currentDateTime().date();
+    for (int i=0; i<42; ++i) {
+        const QDate date = today.addDays(i);
+        const QString key = date.toString(Qt::ISODate);
+        const auto exception = dateExceptions_.value(key).toMap();
+        const auto shift = shiftForDate(date);
+        const int official = holidayCalendar_.scheduleOverride(date);
+        QString source = !exception.isEmpty() ? QStringLiteral("个人例外") : official == 0 ? QStringLiteral("法定放假") : official == 1 ? QStringLiteral("调休补班") : QStringLiteral("周排班");
+        days.append(QVariantMap{{"date",key}, {"label",date.toString("MM-dd")}, {"weekday",date.dayOfWeek()},
+            {"work",shift.isWorkday}, {"source",source}, {"kind",exception.value("kind", "default")},
+            {"start",shift.start.toString("HH:mm")}, {"end",shift.end.toString("HH:mm")}});
+    }
+    return days;
+}
+bool WorkTimer::setDateException(const QString &text, const QString &kind, const QString &start, const QString &end) {
+    const auto date = QDate::fromString(text, Qt::ISODate);
+    const auto now = networkClock_.currentDateTime();
+    if (!date.isValid() || date.toString(Qt::ISODate) != text || date < now.date() || date > now.date().addYears(2) ||
+        date <= experienceProcessedThrough_ || (historyStore_ && historyStore_->latestRecordDate() >= date)) {
+        emit toast(QStringLiteral("仅可调整今天起两年内尚未结算的班次，旧历史不会被覆盖。")); return false;
+    }
+    if (kind != "work" && kind != "rest" && kind != "leave" && kind != "custom") return false;
+    if (kind == "custom" && (!validClock(start) || !validClock(end) || start == end)) {
+        emit toast(QStringLiteral("请输入不同的有效上下班时间。")); return false;
+    }
+    const auto previous = dateExceptions_;
+    dateExceptions_.insert(text, QVariantMap{{"kind",kind},{"start",start},{"end",end}});
+    if (!saveSettings()) { dateExceptions_ = previous; emit toast(QStringLiteral("日期安排保存失败。")); return false; }
+    refresh(); emit settingsChanged(); emit toast(QStringLiteral("日期安排已保存。")); return true;
+}
+bool WorkTimer::clearDateException(const QString &text) {
+    const auto parsed = QDate::fromString(text, Qt::ISODate);
+    if (!parsed.isValid() || parsed.toString(Qt::ISODate) != text) {
+        emit toast(QStringLiteral("请先选择有效日期。")); return false;
+    }
+    if (!dateExceptions_.contains(text)) return true;
+    const auto date = QDate::fromString(text, Qt::ISODate);
+    if (date < networkClock_.currentDateTime().date() || date <= experienceProcessedThrough_ ||
+        (historyStore_ && historyStore_->latestRecordDate() >= date)) {
+        emit toast(QStringLiteral("已结算班次不能通过日期安排回写。")); return false;
+    }
+    const auto previous = dateExceptions_; dateExceptions_.remove(text);
+    if (!saveSettings()) { dateExceptions_ = previous; emit toast(QStringLiteral("日期安排保存失败。")); return false; }
+    refresh(); emit settingsChanged(); emit toast(QStringLiteral("已恢复默认排班。")); return true;
+}
+
 void WorkTimer::refresh() {
     const QDateTime now = networkClock_.currentDateTime();
     // 法定放假日和官方调休上班日覆盖个人周排班，并统一影响工资、经验与历史结算。
@@ -592,7 +680,8 @@ void WorkTimer::refresh() {
     settleHistory(now);
     dateText_ = QLocale(QLocale::Chinese, QLocale::China)
                     .toString(today, QStringLiteral("yyyy年M月d日 dddd"));
-    shiftText_ = startTime_ + QStringLiteral(" — ") + endTime_;
+    const auto todaysShift = shiftForDate(today);
+    shiftText_ = todaysShift.start.toString("HH:mm") + QStringLiteral(" — ") + todaysShift.end.toString("HH:mm");
 
     ShiftWindow current;
     bool foundActive = false;
@@ -640,6 +729,7 @@ void WorkTimer::refresh() {
             static_cast<long double>(hourlyRateCents(candidate)) * earnedPaidMs / kMsPerHour));
     }
     earnedText_ = formatMoney(earnedCents);
+    earnedCents_ = earnedCents;
 
     if (foundActive) {
         const qint64 elapsed = paidElapsedMs(current, now);
@@ -685,6 +775,13 @@ void WorkTimer::refresh() {
         statusText_ = QStringLiteral("今天已经下班啦");
         earnedTimeText_ = formatDuration(todayPaidMs);
     }
+    // 下班后保留今日疲劳终态与工时，次日重新开工再恢复精力。
+    if (!foundActive && todayShift.isWorkday && now >= todayShift.end) {
+        progress_ = 1.0;
+        statusKind_ = QStringLiteral("off");
+        statusText_ = QStringLiteral("今日已下班，辛苦啦！");
+        earnedTimeText_ = formatDuration(paidElapsedMs(todayShift, now));
+    }
     updateExperience(now, foundActive);
     progressText_ = QStringLiteral("%1%").arg(qRound(progress_ * 100.0));
 
@@ -697,6 +794,8 @@ void WorkTimer::refresh() {
     const qint64 summaryPlan = summaryShift.isWorkday
                                    ? paidDurationMs(summaryShift) : 0;
     liveSummary_ = {{QStringLiteral("date"), summaryShift.date.toString(Qt::ISODate)},
+                    {QStringLiteral("manualWork"), dateExceptions_.contains(summaryShift.date.toString(Qt::ISODate))},
+                    {QStringLiteral("shiftEnd"), summaryShift.end.toString(Qt::ISODate)},
                     {QStringLiteral("scheduled"), summaryShift.isWorkday},
                     {QStringLiteral("settled"), summaryShift.isWorkday && summaryShift.end <= now},
                     {QStringLiteral("incomeCents"), summaryIncome},
@@ -726,6 +825,7 @@ void WorkTimer::refresh() {
     if (historyStore_) historyStore_->setCurrentDate(summaryShift.date);
     updateTimeline(summaryShift, now);
     emit snapshotChanged();
+    if (calendarDate_ != today) { calendarDate_ = today; emit settingsChanged(); }
 }
 
 void WorkTimer::syncNetworkTime() {

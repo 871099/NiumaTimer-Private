@@ -48,7 +48,7 @@ bool WorkHistoryStore::reconcileHolidayRecords() {
     for (auto it = days_.begin(); it != days_.end(); ++it) {
         const QDate date = QDate::fromString(it.key(), Qt::ISODate);
         if (!it.value().value(QStringLiteral("settled")).toBool() ||
-            holidayCalendar_.scheduleOverride(date) != 0) continue;
+            holidayCalendar_.scheduleOverride(date) != 0 || it.value().value("manualWork").toBool()) continue;
         QJsonObject day = it.value();
         // 内嵌原始结算快照，后续年历更新仍可追溯每条修正依据。
         day.insert(QStringLiteral("holidayCorrection"), it.value());
@@ -198,7 +198,7 @@ QVariantList WorkHistoryStore::records() const {
     for (auto it = days_.cbegin(); it != days_.cend(); ++it) {
         if (!it.value().value(QStringLiteral("settled")).toBool()) continue;
         // 即使磁盘修正失败，展示也不把法定放假日计为工作记录。
-        if (holidayCalendar_.scheduleOverride(QDate::fromString(it.key(), Qt::ISODate)) == 0) continue;
+        if (holidayCalendar_.scheduleOverride(QDate::fromString(it.key(), Qt::ISODate)) == 0 && !it.value().value("manualWork").toBool()) continue;
         result.append(jsonMap(it.value()));
     }
     return result;
@@ -212,6 +212,19 @@ QVariantList WorkHistoryStore::todayTasks() const {
         return left.toMap().value(QStringLiteral("time")).toString() <
                right.toMap().value(QStringLiteral("time")).toString();
     });
+    return result;
+}
+
+// 今日事项与往日未完成事项组成活动池，不迁移或复制旧任务。
+QVariantList WorkHistoryStore::activityTasks() const {
+    QVariantList result;
+    for(auto it=days_.cbegin();it!=days_.cend();++it) {
+        for(const auto &value:it.value().value("tasks").toArray()) {
+            auto task=value.toObject();
+            if(it.key()!=currentDate_.toString(Qt::ISODate) && task.value("done").toBool())continue;
+            task["sourceDate"]=it.key(); result.append(task.toVariantMap());
+        }
+    }
     return result;
 }
 
@@ -239,7 +252,7 @@ bool WorkHistoryStore::recordCompletedDay(const QVariantMap &record) {
                                          Qt::ISODate);
     if (!date.isValid()) return false;
     // 仓库入口再次约束放假日期，避免旧调用方重新写入假期班次。
-    if (holidayCalendar_.scheduleOverride(date) == 0) return false;
+    if (holidayCalendar_.scheduleOverride(date) == 0 && !record.value("manualWork").toBool()) return false;
     const QString key = date.toString(Qt::ISODate);
     QJsonObject day = days_.value(key);
     if (day.value(QStringLiteral("settled")).toBool()) return true;
@@ -381,9 +394,10 @@ QList<QDate> WorkHistoryStore::datesInPeriod(const QString &period,
 
 QVariantMap WorkHistoryStore::recordForDate(const QDate &date,
                                             const QVariantMap &liveRecord) const {
-    if (holidayCalendar_.scheduleOverride(date) == 0) return {};
     const QString key = date.toString(Qt::ISODate);
     const QJsonObject day = days_.value(key);
+    if (holidayCalendar_.scheduleOverride(date) == 0 && !day.value("manualWork").toBool() &&
+        !(liveRecord.value("date").toString() == key && liveRecord.value("manualWork").toBool())) return {};
     if (day.value(QStringLiteral("settled")).toBool()) return jsonMap(day);
     if (liveRecord.value(QStringLiteral("date")).toString() == key &&
         liveRecord.value(QStringLiteral("scheduled")).toBool()) return liveRecord;

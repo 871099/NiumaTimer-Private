@@ -255,9 +255,10 @@ Item {
                             }
                         }
                     }
-                    Text { Layout.fillWidth: true; text: qsTr("节假日和调休暂不自动识别；如需不同排班，请在这里更新每周工作日。"); color: Theme.textMuted; font.pixelSize: 9; wrapMode: Text.WordWrap }
+                    Text { Layout.fillWidth: true; text: qsTr("已收录年历中的法定放假和调休自动生效；公司临时安排请使用下方日期例外。"); color: Theme.textMuted; font.pixelSize: 9; wrapMode: Text.WordWrap }
                 }
             }
+            DateExceptionsCard { timerController: page.timerController }
             Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 50; radius: 13; color: "#0058ff"; border.color: Theme.cyan; Text { anchors.centerIn: parent; text: qsTr("保存工作时间"); color: "white"; font.pixelSize: 12; font.bold: true } MouseArea { anchors.fill: parent; onClicked: page.saveChanges() } }
             Text { Layout.fillWidth: true; visible: page.validationMessage.length > 0; text: page.validationMessage; color: Theme.red; font.pixelSize: 10; wrapMode: Text.WordWrap }
             Item { Layout.preferredHeight: 3 }

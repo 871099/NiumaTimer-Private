@@ -8,6 +8,7 @@ Item {
     id: page
     property var timerController
     property var historyStore
+    property var desktop
     property string period: "week"
     readonly property var currentStats: {
         historyStore.records
@@ -22,7 +23,7 @@ Item {
         return all.slice(Math.max(0, all.length - 10)).reverse()
     }
 
-    function money(cents) { return "¥ " + (Number(cents || 0) / 100).toFixed(2) }
+    function money(cents) { return desktop.privacy ? "••••" : "¥ " + (Number(cents || 0) / 100).toFixed(2) }
     function maxIncome() {
         let maximum = 0
         for (let i = 0; i < chartData.length; ++i)
@@ -173,7 +174,7 @@ Item {
                                             anchors.horizontalCenter: parent.horizontalCenter
                                             anchors.bottom: parent.bottom
                                             width: parent.width * 0.64
-                                            height: Math.max(3, parent.height * Number(chartBar.modelData.incomeCents || 0) / page.maxIncome())
+                                            height: page.desktop.privacy ? 3 : Math.max(3, parent.height * Number(chartBar.modelData.incomeCents || 0) / page.maxIncome())
                                             radius: 5
                                             color: chartBar.modelData.isToday ? Theme.cyan : chartBar.modelData.hasData ? "#268cff" : "#ccd9ee"
                                         }

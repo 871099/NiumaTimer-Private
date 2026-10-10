@@ -8,6 +8,8 @@ Item {
     id: page
     property var timerController
     property var historyStore
+    property var focusModel
+    property var desktop
     signal navigateRequested(string target)
     readonly property bool compact: width < 820
     readonly property var monthStats: {
@@ -54,6 +56,11 @@ Item {
                         currentFrame: Math.round(page.timerController.progress * 5)
                         running: false; paused: true; interpolate: false; smooth: false
                     }
+                    SequentialAnimation {
+                        running: page.visible && page.desktop.animations; loops: Animation.Infinite
+                        NumberAnimation { target: cow; property: "scale"; to: 1.018; duration: 1200; easing.type: Easing.InOutSine }
+                        NumberAnimation { target: cow; property: "scale"; to: 1; duration: 1200; easing.type: Easing.InOutSine }
+                    }
                     Text { anchors.horizontalCenter: cow.horizontalCenter; anchors.top: cow.top; anchors.topMargin: 26; text: page.accessory(); color: Theme.yellow; font.pixelSize: 23; style: Text.Outline; styleColor: "#07142c" }
                     Rectangle {
                         x: page.compact ? 8 : parent.width * 0.36
@@ -94,6 +101,8 @@ Item {
                 }
             }
 
+            Label { Layout.fillWidth:true; text:page.timerController.scheduleReason; color:"#cdeaff"; font.pixelSize:11; wrapMode:Text.WordWrap }
+
             GridLayout {
                 Layout.fillWidth: true
                 columns: page.compact ? 1 : 2
@@ -133,15 +142,15 @@ Item {
                                 PixelIcon { Layout.preferredWidth: 32; Layout.preferredHeight: 32; kind: "money" }
                                 Text { text: qsTr("今日工资"); color: Theme.textPrimary; font.pixelSize: 19; font.bold: true }
                             }
-                            PixelDigits { Layout.fillWidth: true; Layout.fillHeight: true; Layout.minimumHeight: 37; text: "¥" + page.timerController.earnedText; ink: Theme.orange; outlined: false }
+                            PixelDigits { Layout.fillWidth: true; Layout.fillHeight: true; Layout.minimumHeight: 37; text: page.desktop.privacy ? "••••" : "¥" + page.timerController.earnedText; ink: Theme.orange; outlined: false }
                             Text { text: qsTr("每一秒，都有收获"); color: Theme.textMuted; font.pixelSize: 10 }
                         }
                         Rectangle { Layout.preferredWidth: 1; Layout.fillHeight: true; Layout.topMargin: 20; Layout.bottomMargin: 18; color: "#acc8ef" }
                         ColumnLayout {
                             Layout.preferredWidth: page.compact ? 136 : 156; spacing: 9
-                            Text { Layout.fillWidth: true; text: qsTr("时薪：¥ %1").arg(page.timerController.hourlyText); color: Theme.textSecondary; font.pixelSize: 11; elide: Text.ElideRight }
+                            Text { Layout.fillWidth: true; text: page.desktop.privacy ? qsTr("时薪：已隐藏") : qsTr("时薪：¥ %1").arg(page.timerController.hourlyText); color: Theme.textSecondary; font.pixelSize: 11; elide: Text.ElideRight }
                             Text { Layout.fillWidth: true; text: qsTr("今日工时：%1").arg(page.timerController.earnedTimeText); color: Theme.textSecondary; font.pixelSize: 11; elide: Text.ElideRight }
-                            Text { Layout.fillWidth: true; text: qsTr("本月累计：¥ %1").arg((Number(page.monthStats.incomeCents) / 100).toFixed(2)); color: Theme.textSecondary; font.pixelSize: 11; elide: Text.ElideRight }
+                            Text { Layout.fillWidth: true; text: page.desktop.privacy ? qsTr("本月累计：已隐藏") : qsTr("本月累计：¥ %1").arg((Number(page.monthStats.incomeCents) / 100).toFixed(2)); color: Theme.textSecondary; font.pixelSize: 11; elide: Text.ElideRight }
                             Text { text: qsTr("查看统计 ›"); color: Theme.cyan; font.pixelSize: 10; MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: page.navigateRequested("statistics") } }
                         }
                     }
@@ -217,13 +226,15 @@ Item {
                         Text { text: qsTr("维护今日任务与阶段 ›"); color: Theme.cyan; font.pixelSize: 9; MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: page.navigateRequested("tasks") } }
                     }
                 }
-                QuickScheduleCard {
+                QuickScheduleCard { visible: !page.desktop.privacy;
                     Layout.fillWidth: true; Layout.preferredWidth: 256
                     Layout.preferredHeight: 214
                     timerController: page.timerController
                     onNavigateRequested: function(target) { page.navigateRequested(target) }
                 }
             }
+            Button { Layout.fillWidth:true; text:page.focusModel.engaged ? "专注空间 · " + page.focusModel.countdown + " · " + page.focusModel.taskTitle : "牛马专注空间 · 番茄钟与白噪音"; onClicked:page.navigateRequested("focus") }
+            IncomeGoalsCard { Layout.fillWidth:true; desktop:page.desktop; timerController:page.timerController }
             HolidayCountdownCard { Layout.fillWidth: true; holiday: page.timerController.holiday }
             Text { Layout.fillWidth: true; text: page.timerController.dateText + "  ·  " + page.timerController.shiftText + "  ·  " + page.timerController.networkTimeStatusText; color: "#d1e8ff"; font.pixelSize: 9; wrapMode: Text.WordWrap }
             Item { Layout.preferredHeight: 1 }

@@ -20,6 +20,7 @@ class WorkTimer final : public QObject {
     Q_PROPERTY(QString countdownLabel READ countdownLabel NOTIFY snapshotChanged)
     Q_PROPERTY(QString countdownText READ countdownText NOTIFY snapshotChanged)
     Q_PROPERTY(QString earnedText READ earnedText NOTIFY snapshotChanged)
+    Q_PROPERTY(qint64 earnedCents READ earnedCents NOTIFY snapshotChanged)
     Q_PROPERTY(QString hourlyText READ hourlyText NOTIFY snapshotChanged)
     Q_PROPERTY(QString progressText READ progressText NOTIFY snapshotChanged)
     Q_PROPERTY(QString statusText READ statusText NOTIFY snapshotChanged)
@@ -39,6 +40,8 @@ class WorkTimer final : public QObject {
     Q_PROPERTY(int completedWorkdays READ completedWorkdays WRITE setCompletedWorkdays NOTIFY snapshotChanged)
     Q_PROPERTY(QString networkTimeStatusText READ networkTimeStatusText NOTIFY snapshotChanged)
     Q_PROPERTY(QVariantMap holiday READ holiday NOTIFY snapshotChanged)
+    Q_PROPERTY(QString scheduleReason READ scheduleReason NOTIFY snapshotChanged)
+    Q_PROPERTY(QVariantList calendarDays READ calendarDays NOTIFY settingsChanged)
 
     Q_PROPERTY(QString salaryMode READ salaryMode WRITE setSalaryMode NOTIFY settingsChanged)
     Q_PROPERTY(double salaryAmount READ salaryAmount WRITE setSalaryAmount NOTIFY settingsChanged)
@@ -61,6 +64,7 @@ public:
     QString countdownLabel() const { return countdownLabel_; }
     QString countdownText() const { return countdownText_; }
     QString earnedText() const { return earnedText_; }
+    qint64 earnedCents() const { return earnedCents_; }
     QString hourlyText() const { return hourlyText_; }
     QString progressText() const { return progressText_; }
     QString statusText() const { return statusText_; }
@@ -80,6 +84,13 @@ public:
     int completedWorkdays() const { return completedWorkdays_; }
     QString networkTimeStatusText() const { return networkClock_.statusText(); }
     QVariantMap holiday() const { return holiday_; }
+    QDateTime currentDateTime() const { return networkClock_.currentDateTime(); }
+    QString scheduleReason() const;
+    QVariantList calendarDays() const;
+    // 日期例外只修改未结算班次，保护缺乏逐日来源的旧经验基数。
+    Q_INVOKABLE bool setDateException(const QString &date, const QString &kind,
+                                     const QString &start, const QString &end);
+    Q_INVOKABLE bool clearDateException(const QString &date);
 
     QString salaryMode() const { return salaryMode_; }
     double salaryAmount() const { return salaryAmount_; }
@@ -158,6 +169,8 @@ private:
                             const QDateTime &bStart, const QDateTime &bEnd);
 
     QSettings settings_;
+    QVariantMap dateExceptions_;
+    QDate calendarDate_;
     NetworkClock networkClock_;
     ChinaHolidayCalendar holidayCalendar_;
     QTimer refreshTimer_;
@@ -181,6 +194,7 @@ private:
     QString countdownLabel_;
     QString countdownText_;
     QString earnedText_;
+    qint64 earnedCents_ = 0;
     QString hourlyText_;
     QString progressText_;
     QString statusText_;

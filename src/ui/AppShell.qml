@@ -8,17 +8,22 @@ Item {
     id: shell
     property var timerController
     property var historyStore
+    property var focusModel
+    property var sound
+    property var desktop
     property string route: "home"
     readonly property bool mobilePlatform: Qt.platform.os === "android" || Qt.platform.os === "ios"
     readonly property bool showSidebar: !mobilePlatform && width >= 960
     readonly property var navigation: [
         {route:"home", label:qsTr("首页"), icon:"home"},
         {route:"tasks", label:qsTr("今日任务"), icon:"tasks"},
+        {route:"focus", label:qsTr("专注空间"), icon:"tasks"},
         {route:"statistics", label:qsTr("数据统计"), icon:"statistics"},
         {route:"salary", label:qsTr("工资设置"), icon:"salary"},
         {route:"schedule", label:qsTr("工作时间设置"), icon:"gear"},
         {route:"achievements", label:qsTr("成就图鉴"), icon:"achievements"},
         {route:"appearance", label:qsTr("外观换装"), icon:"appearance"},
+        {route:"desktop", label:qsTr("桌面陪伴"), icon:"gear"},
         {route:"about", label:qsTr("关于"), icon:"about"}
     ]
     readonly property var bottomNavigation: [
@@ -48,7 +53,7 @@ Item {
                 ColumnLayout {
                     Layout.fillWidth: true; spacing: 2
                     Text { Layout.fillWidth: true; text: qsTr("牛马打工计时器"); color: shell.showSidebar ? "#ffffff" : Theme.textPrimary; font.pixelSize: shell.showSidebar ? 14 : 19; font.bold: true; elide: Text.ElideRight }
-                    Text { visible: !shell.showSidebar; text: qsTr("打工只是副本，下班才是主线！"); color: Theme.textSecondary; font.pixelSize: 10 }
+                    Text { visible: !shell.showSidebar; Layout.fillWidth:true; elide:Text.ElideRight; text: qsTr("打工只是副本，下班才是主线！"); color: Theme.textSecondary; font.pixelSize: 10 }
                 }
                 Text { visible: shell.showSidebar; text: shell.routeTitle(); color:"#dceaff"; font.pixelSize:11 }
                 Text { visible: shell.showSidebar; text: shell.timerController.dateText; color:"#bad7ff"; font.pixelSize:10 }
@@ -62,6 +67,8 @@ Item {
                     ToolTip.text: shell.timerController.windowPinned ? qsTr("取消窗口置顶") : qsTr("窗口置顶")
                     MouseArea { id:pinMouse; anchors.fill:parent; hoverEnabled:true; cursorShape:Qt.PointingHandCursor; onClicked:shell.timerController.windowPinned = !shell.timerController.windowPinned }
                 }
+                Button { text: shell.desktop.privacy ? "隐" : "显"; implicitWidth: 32; implicitHeight: 28; onClicked: shell.desktop.privacy = !shell.desktop.privacy; ToolTip.text: qsTr("隐藏 / 显示工资"); ToolTip.visible: hovered }
+                Button { visible: shell.desktop.available; text: "▣"; implicitWidth: 32; implicitHeight: 28; onClicked: shell.desktop.miniVisible = !shell.desktop.miniVisible; ToolTip.text: qsTr("桌面挂件"); ToolTip.visible: hovered }
                 PixelIcon { visible: !shell.showSidebar; Layout.preferredWidth:27; Layout.preferredHeight:27; kind:"gear"; MouseArea { anchors.fill:parent; onClicked:shell.navigate("schedule") } }
             }
         }
@@ -146,7 +153,7 @@ Item {
         contentItem:ColumnLayout {
             spacing:4
             Repeater {
-                model:shell.navigation.slice(3)
+                model:shell.navigation.filter(function(item) { return ["home", "tasks", "statistics", "appearance"].indexOf(item.route) < 0 })
                 delegate:Rectangle {
                     id:toolItem
                     required property var modelData
@@ -158,9 +165,12 @@ Item {
             }
         }
     }
-    Component {id:homePage; HomePage {timerController:shell.timerController;historyStore:shell.historyStore;onNavigateRequested:function(target){shell.navigate(target)}}}
+    Component {id:homePage; HomePage {timerController:shell.timerController;historyStore:shell.historyStore;desktop:shell.desktop;focusModel:shell.focusModel;onNavigateRequested:function(target){shell.navigate(target)}}}
     Component {id:tasksPage; TasksPage {timerController:shell.timerController;historyStore:shell.historyStore}}
-    Component {id:statisticsPage; StatisticsPage {timerController:shell.timerController;historyStore:shell.historyStore}}
+    Component {id:statisticsPage; StatisticsPage {timerController:shell.timerController;historyStore:shell.historyStore;desktop:shell.desktop}}
+    Component {id:focusPage; FocusPage {focusModel:shell.focusModel;sound:shell.sound}}
+    Component {id:desktopPage; DesktopSettingsPage {desktop:shell.desktop}}
+    Component {id:privacyPage; Item { Label { anchors.centerIn:parent; width:parent.width-40; wrapMode:Text.WordWrap; horizontalAlignment:Text.AlignHCenter; text:qsTr("工资隐私模式已开启。关闭顶栏隐私开关后查看工资设置。");color:Theme.textPrimary } }}
     Component {id:salaryPage; SalarySettingsPage {timerController:shell.timerController}}
     Component {id:schedulePage; ScheduleSettingsPage {timerController:shell.timerController}}
     Component {id:achievementsPage; AchievementsPage {timerController:shell.timerController;historyStore:shell.historyStore}}
@@ -168,9 +178,11 @@ Item {
     Component {id:aboutPage; AboutPage {historyStore:shell.historyStore}}
     function componentForRoute(target) {
         switch(target) {
+        case "focus":return focusPage
         case "tasks":return tasksPage
         case "statistics":return statisticsPage
-        case "salary":return salaryPage
+        case "desktop":return desktopPage
+        case "salary":return shell.desktop.privacy ? privacyPage : salaryPage
         case "schedule":return schedulePage
         case "achievements":return achievementsPage
         case "appearance":return appearancePage
@@ -187,5 +199,6 @@ Item {
         Behavior on opacity {NumberAnimation {duration:180}}
     }
     Timer {id:toastTimer;interval:2400;onTriggered:toastBox.opacity=0}
+    Connections {target:shell.desktop;function onMessage(message){toastText.text=message;toastBox.opacity=1;toastTimer.restart()}}
     Connections {target:shell.timerController;function onToast(message){toastText.text=message;toastBox.opacity=1;toastTimer.restart()}}
 }

@@ -62,3 +62,7 @@ NetworkClock
 - 数据按应用版本发布，无自动抓取年历服务。新增年度前需核对国务院通知并更新 JSON/来源；详见 `05-china-holiday-countdown.md`。
 - 跨午夜班次若进入法定放假日，在假期当天零点截断前一日班次，避免假期时段继续累计工时与工资。
 - `WorkHistoryStore` 加载后修正旧版假期误结算：先备份原文件，保留日期/任务并归档原快照，再取消班次结算和收入/工时；列表、统计读取与写入入口都有假期日期约束。重复加载不重复迁移，保存失败保留原数据并报告存储错误。
+
+## 桌面陪伴与日期例外（2026-10-10）
+
+新增 DesktopController 独立管理 Windows 托盘、窗口与桌面偏好，MiniWidget 绑定共享 WorkTimer。Windows 主入口使用 QApplication，Android 仍为 QGuiApplication。个人日期例外优先于官方年历和周排班；历史通过 manualWork 识别明确的假期上班安排。收入目标基于整数分比较。详细接口边界及未完成项见 `06-desktop-companion.md`。

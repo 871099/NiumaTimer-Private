@@ -28,6 +28,8 @@ public:
 
     QVariantList records() const;
     QVariantList todayTasks() const;
+    // 活动清单保留往日未完成事项，供专注计划继续关联原 UUID。
+    QVariantList activityTasks() const;
     QString selectedOutfit() const { return selectedOutfit_; }
     QString dataPath() const { return dataPath_; }
     QString storageError() const { return storageError_; }

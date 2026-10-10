@@ -203,3 +203,53 @@ flowchart TB
     Source[共享 Qt C++ 与 QML 源码] --> WinExe
     Source --> Apk
 ```
+# 桌面陪伴扩展（2026-10-10）
+
+```mermaid
+classDiagram
+    class DesktopController {
+        +miniVisible
+        +privacy
+        +locked
+        +clickThrough
+        +incomeGoals
+        +showMain()
+        +quit()
+    }
+    class WorkTimer {
+        +calendarDays
+        +scheduleReason
+        +earnedCents
+        +setDateException()
+        +clearDateException()
+    }
+    class MiniWidget
+    class DateExceptionsCard
+    class DesktopSettingsPage
+    class WorkHistoryStore
+    DesktopSettingsPage --> DesktopController
+    MiniWidget --> DesktopController
+    MiniWidget --> WorkTimer
+    DesktopController --> WorkTimer : 读取提醒与目标快照
+    DateExceptionsCard --> WorkTimer : 修改未结算日期安排
+    WorkTimer --> WorkHistoryStore : 带个人安排标记的班次结算
+```
+
+## 专注与声音状态机（2026-10-10）
+
+```mermaid
+stateDiagram-v2
+    [*] --> idle
+    idle --> focus: 选择任务并开始
+    focus --> paused: 日常模式暂停或休眠
+    focus --> waiting: 日常模式等待
+    paused --> focus: 恢复专注阶段
+    waiting --> focus: 继续
+    focus --> short: 完整轮次
+    focus --> long: 每组最后一轮
+    short --> idle: 休息结束
+    long --> idle: 休息结束
+    focus --> idle: 真正中断或严格模式暂停
+```
+
+FocusController 读取 WorkHistoryStore 活动任务；SoundController 监听专注状态；两者均不写工资和上班经验。暂停恢复也可返回短/长休息阶段。
