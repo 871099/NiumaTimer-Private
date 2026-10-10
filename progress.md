@@ -4,7 +4,7 @@
 
 ## 当前阶段
 
-2026-10-10：按用户要求准备第二版v0.2.0，更新CMake/程序/关于页与Android版本号（code2），发布目标为私有仓库871099/NiumaTimer-Private；Windows重新构建打包，完整交互验收限制写入docs/releases/v0.2.0.md。
+2026-10-10：第二版v0.2.0已发布到私有仓库871099/NiumaTimer-Private，非草稿且标记Latest。程序/CMake/关于页为0.2.0，Android code2（未提供APK）。标签源码f1e0f93，Windows重新编译，ZIP61,539,376字节；ZIP及SHA256SUMS附件服务端摘要与本机一致。完整交互验收限制见docs/releases/v0.2.0.md。
 
 2026-10-10 Git交付：用户确认新建私有仓库871099/NiumaTimer-Private，已创建并核查PRIVATE，功能提交b2d3d7a已推送main。新增private远程，main跟踪private/main；origin仍指向原公开仓库，公开仓库与v0.1.0发布未修改。编译包和本机数据未纳入Git。
 

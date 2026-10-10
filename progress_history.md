@@ -199,3 +199,12 @@
 
 ### 文档维护信息
 最后更新：2026-10-10；最近记录：私有仓库推送；时区Asia/Singapore（UTC+8）。
+
+## 2026-10-10：第二版 v0.2.0 发布
+
+按用户授权发布私有仓库第二个产品版本v0.2.0。CMake、程序与关于页同步0.2.0，Android版本code2（无APK）；标签指向f1e0f938c14c987c25f597cc2f72d8302b55622d。Windows Qt6.8.3/MSVC2022 Release重新编译成功；完整ZIP61,539,376字节，包含Qt插件/QML/许可证/VC运行库，无个人history、focus或日志。包内EXE哈希与构建一致，ZIP结构校验完成。
+
+私有Release已发布（非草稿/非预发布/Latest），附件NiumaTimer-0.2.0-windows-x64.zip与SHA256SUMS.txt服务端digest均与本机一致。ZIP SHA256为291f99b4f89d013129baf6cabcc35933cee2f025167ef3ee93978882fba2392a。发布地址https://github.com/871099/NiumaTimer-Private/releases/tag/v0.2.0 。证据build-release/v020-package-evidence.json与v020-publication-evidence.json。未新增/运行测试，完整交互/试听/多DPI仍待验收，发布说明已明确；原公开仓库未变。
+
+### 文档维护信息
+最后更新：2026-10-10；最近记录：v0.2.0私有发布；时区Asia/Singapore（UTC+8）。
