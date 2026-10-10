@@ -51,7 +51,7 @@ int main(int argc, char *argv[]) {
     // 隔离预览使用独立业务数据目录，不触碰正在运行版本的工资与历史。
     if (app.arguments().contains("--isolated-preview"))
         QCoreApplication::setApplicationName(QStringLiteral("牛马打工计时器-专注预览"));
-    QCoreApplication::setApplicationVersion(QStringLiteral("0.1.0"));
+    QCoreApplication::setApplicationVersion(QStringLiteral("0.2.0"));
     const auto dataDir = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
     QDir().mkpath(dataDir);
     startupLogPath = QDir(dataDir).filePath("startup.log");

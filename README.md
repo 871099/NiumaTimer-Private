@@ -4,7 +4,7 @@
 
 ## Windows 下载
 
-在 [GitHub Releases](https://github.com/871099/NiumaTimer/releases) 中下载 `NiumaTimer-0.1.0-windows-x64.zip`，完整解压后运行 `NiumaTimer.exe`。Qt 动态库和插件已经随包提供；如提示缺少 MSVC 运行库，可运行包内 `vc_redist.x64.exe`。功能和限制见 [v0.1.0 发布说明](docs/releases/v0.1.0.md)，第三方依赖见 [许可说明](THIRD_PARTY_NOTICES.md)。
+在 [私有仓库 Releases](https://github.com/871099/NiumaTimer-Private/releases) 下载 `NiumaTimer-0.2.0-windows-x64.zip`（需有访问权限的 GitHub 账号），完整解压后运行 `NiumaTimer.exe`。Qt 动态库和插件随包提供；若缺 MSVC 运行库，可运行包内 `vc_redist.x64.exe`。本版本是第二个发布版本，详见 [v0.2.0 发布说明](docs/releases/v0.2.0.md)。
 
 ## 本地开发预览（2026-10-10）
 

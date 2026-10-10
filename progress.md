@@ -4,6 +4,8 @@
 
 ## 当前阶段
 
+2026-10-10：按用户要求准备第二版v0.2.0，更新CMake/程序/关于页与Android版本号（code2），发布目标为私有仓库871099/NiumaTimer-Private；Windows重新构建打包，完整交互验收限制写入docs/releases/v0.2.0.md。
+
 2026-10-10 Git交付：用户确认新建私有仓库871099/NiumaTimer-Private，已创建并核查PRIVATE，功能提交b2d3d7a已推送main。新增private远程，main跟踪private/main；origin仍指向原公开仓库，公开仓库与v0.1.0发布未修改。编译包和本机数据未纳入Git。
 
 2026-10-10 记录入口与穿透修正：只读确认原history有10个日期而隔离目录0个，两根启动脚本统一读取原正式数据且优先r4；未改动历史文件。穿透改为展示区原生输入样式，按钮区恢复输入。Release16/16成功，QML静态检查未报错误；实际交互待验收。包dist/NiumaTimer-widget-r4-windows-x64。

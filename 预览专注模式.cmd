@@ -1,7 +1,8 @@
 @echo off
 chcp 65001 >nul
 rem 日常启动读取正式数据，不传入隔离预览参数。
-set "timerDir=%~dp0dist\NiumaTimer-widget-r4-windows-x64"
+set "timerDir=%~dp0dist\NiumaTimer-0.2.0-windows-x64"
+if not exist "%timerDir%\NiumaTimer.exe" set "timerDir=%~dp0dist\NiumaTimer-widget-r4-windows-x64"
 if not exist "%timerDir%\NiumaTimer.exe" set "timerDir=%~dp0dist\NiumaTimer-widget-r3-windows-x64"
 if not exist "%timerDir%\NiumaTimer.exe" set "timerDir=%~dp0dist\NiumaTimer-focus-audio-r2-windows-x64"
 if not exist "%timerDir%\NiumaTimer.exe" set "timerDir=%~dp0dist\NiumaTimer-focus-preview-windows-x64"

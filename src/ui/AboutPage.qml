@@ -44,7 +44,7 @@ Item {
                         Layout.fillWidth: true
                         spacing: 4
                         Text { text: qsTr("牛马打工计时器"); color: Theme.textPrimary; font.pixelSize: 16; font.bold: true }
-                        Text { text: qsTr("版本 0.1.0 · Qt 6.8 · Windows / Android"); color: Theme.textSecondary; font.pixelSize: 9; wrapMode: Text.WordWrap }
+                        Text { text: qsTr("版本 0.2.0 · Qt 6.8 · Windows / Android"); color: Theme.textSecondary; font.pixelSize: 9; wrapMode: Text.WordWrap }
                         Text { text: qsTr("工资、任务与工作记录只保存在本机，不需要注册账号。"); color: "#314c82"; font.pixelSize: 9; wrapMode: Text.WordWrap }
                     }
                 }
